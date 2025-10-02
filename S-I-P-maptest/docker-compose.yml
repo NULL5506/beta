@@ -1,0 +1,58 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+
+      
+    container_name: smart-parking-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/smart_parking
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./backend:/app  
+
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]    
+    
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+    ##frontend: # Adiciona o serviço de dev do frontend que sugeri
+    ##image: node:20-alpine
+    ##container_name: smart-parking-frontend
+    ##working_dir: /app
+    ##ports:
+    ##  - "3000:3000"
+    ##volumes:
+    ##  - ./frontend:/app  # <-- Aponta para a nova pasta frontend
+    ##command: ["npm", "start"]
+    ##restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: smart-parking-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=smart_parking
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+
+  redis:
+      image: redis:7-alpine
+      container_name: smart-parking-redis
+      ports:
+        - "6379:6379"
+      restart: unless-stopped
+
+volumes:
+  postgres_data:
